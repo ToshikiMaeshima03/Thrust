@@ -19,6 +19,7 @@ pub fn load_obj(device: &wgpu::Device, path: &Path) -> Result<Vec<Mesh>, String>
         let mesh_data = &model.mesh;
         let num_vertices = mesh_data.positions.len() / 3;
         let has_normals = !mesh_data.normals.is_empty();
+        let has_texcoords = !mesh_data.texcoords.is_empty();
 
         let mut vertices = Vec::with_capacity(num_vertices);
 
@@ -39,7 +40,17 @@ pub fn load_obj(device: &wgpu::Device, path: &Path) -> Result<Vec<Mesh>, String>
                 [0.0, 1.0, 0.0]
             };
 
-            vertices.push(Vertex { position, normal });
+            let tex_coords = if has_texcoords {
+                [mesh_data.texcoords[i * 2], mesh_data.texcoords[i * 2 + 1]]
+            } else {
+                [0.0, 0.0]
+            };
+
+            vertices.push(Vertex {
+                position,
+                normal,
+                tex_coords,
+            });
         }
 
         // 法線がない場合はフェイス法線を計算

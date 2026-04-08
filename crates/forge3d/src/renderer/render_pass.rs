@@ -93,8 +93,9 @@ pub fn render_frame(
         render_pass.set_pipeline(pipeline);
         render_pass.set_bind_group(0, camera_bind_group, &[]);
 
-        for obj in &scene.objects {
+        for obj in scene.objects_iter() {
             render_pass.set_bind_group(1, &obj.model_bind_group, &[]);
+            render_pass.set_bind_group(2, &obj.material_bind_group, &[]);
             render_pass.set_vertex_buffer(0, obj.mesh.vertex_buffer.slice(..));
             render_pass
                 .set_index_buffer(obj.mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);

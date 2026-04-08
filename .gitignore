@@ -1,2 +1,16 @@
 /target
-Cargo.lock
+
+# Editor
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug
+*.pdb

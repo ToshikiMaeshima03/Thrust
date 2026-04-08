@@ -4,21 +4,34 @@ use crate::shader;
 pub struct ForgeBindGroupLayouts {
     pub camera: wgpu::BindGroupLayout,
     pub model: wgpu::BindGroupLayout,
+    pub material: wgpu::BindGroupLayout,
 }
 
 pub fn create_bind_group_layouts(device: &wgpu::Device) -> ForgeBindGroupLayouts {
     let camera = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: Some("Camera Bind Group Layout"),
-        entries: &[wgpu::BindGroupLayoutEntry {
-            binding: 0,
-            visibility: wgpu::ShaderStages::VERTEX,
-            ty: wgpu::BindingType::Buffer {
-                ty: wgpu::BufferBindingType::Uniform,
-                has_dynamic_offset: false,
-                min_binding_size: None,
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
             },
-            count: None,
-        }],
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+        ],
     });
 
     let model = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -35,7 +48,43 @@ pub fn create_bind_group_layouts(device: &wgpu::Device) -> ForgeBindGroupLayouts
         }],
     });
 
-    ForgeBindGroupLayouts { camera, model }
+    let material = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("Material Bind Group Layout"),
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Texture {
+                    multisampled: false,
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 2,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                count: None,
+            },
+        ],
+    });
+
+    ForgeBindGroupLayouts {
+        camera,
+        model,
+        material,
+    }
 }
 
 pub fn create_render_pipeline(
@@ -50,7 +99,11 @@ pub fn create_render_pipeline(
 
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("Render Pipeline Layout"),
-        bind_group_layouts: &[Some(&layouts.camera), Some(&layouts.model)],
+        bind_group_layouts: &[
+            Some(&layouts.camera),
+            Some(&layouts.model),
+            Some(&layouts.material),
+        ],
         immediate_size: 0,
     });
 

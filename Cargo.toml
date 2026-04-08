@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "crates/forge3d",
     "examples/obj_viewer",
+    "examples/primitives_demo",
 ]
 
 [workspace.package]
@@ -21,3 +22,6 @@ log = "0.4"
 env_logger = "0.11"
 pollster = "0.4"
 anyhow = "1"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+hecs = "0.11"
+rodio = "0.20"

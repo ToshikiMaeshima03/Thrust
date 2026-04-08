@@ -14,3 +14,6 @@ bytemuck.workspace = true
 tobj.workspace = true
 log.workspace = true
 pollster.workspace = true
+image.workspace = true
+hecs.workspace = true
+rodio.workspace = true
