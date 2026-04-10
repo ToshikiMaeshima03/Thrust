@@ -1,0 +1,33 @@
+[package]
+name = "thrust"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "A cross-platform 3D rendering library built on wgpu"
+
+[dependencies]
+wgpu.workspace = true
+winit.workspace = true
+glam.workspace = true
+bytemuck.workspace = true
+tobj.workspace = true
+log.workspace = true
+pollster.workspace = true
+image.workspace = true
+hecs.workspace = true
+gltf.workspace = true
+stl_io.workspace = true
+thiserror.workspace = true
+rapier3d.workspace = true
+nalgebra.workspace = true
+mikktspace.workspace = true
+kira.workspace = true
+mint.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+rhai.workspace = true
+rayon.workspace = true
+egui.workspace = true
+egui-wgpu.workspace = true
+egui-winit.workspace = true

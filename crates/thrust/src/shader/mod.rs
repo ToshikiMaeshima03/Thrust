@@ -1,0 +1,30 @@
+pub const DEFAULT_SHADER: &str = include_str!("default.wgsl");
+pub const PARTICLE_SHADER: &str = include_str!("particle.wgsl");
+pub const PARTICLE_TEXTURED_SHADER: &str = include_str!("particle_textured.wgsl");
+pub const SHADOW_SHADER: &str = include_str!("shadow.wgsl");
+pub const TONEMAP_SHADER: &str = include_str!("tonemap.wgsl");
+pub const BLOOM_SHADER: &str = include_str!("bloom.wgsl");
+pub const FXAA_SHADER: &str = include_str!("fxaa.wgsl");
+pub const SKYBOX_SHADER: &str = include_str!("skybox.wgsl");
+pub const EQUIRECT_TO_CUBE_SHADER: &str = include_str!("equirect_to_cube.wgsl");
+pub const IRRADIANCE_SHADER: &str = include_str!("irradiance.wgsl");
+pub const SPECULAR_PREFILTER_SHADER: &str = include_str!("specular_prefilter.wgsl");
+pub const BRDF_LUT_SHADER: &str = include_str!("brdf_lut.wgsl");
+pub const INSTANCED_SHADER: &str = include_str!("instanced.wgsl");
+pub const SSAO_SHADER: &str = include_str!("ssao.wgsl");
+pub const SSAO_BLUR_SHADER: &str = include_str!("ssao_blur.wgsl");
+// Round 7
+pub const PREPASS_SHADER: &str = include_str!("prepass.wgsl");
+pub const SSR_SHADER: &str = include_str!("ssr.wgsl");
+pub const DECAL_SHADER: &str = include_str!("decal.wgsl");
+pub const VOLUMETRIC_SHADER: &str = include_str!("volumetric.wgsl");
+pub const SHADOW_ATLAS_SHADER: &str = include_str!("shadow_atlas.wgsl");
+pub const DOF_SHADER: &str = include_str!("dof.wgsl");
+pub const MOTION_BLUR_SHADER: &str = include_str!("motion_blur.wgsl");
+pub const COLOR_GRADING_SHADER: &str = include_str!("color_grading.wgsl");
+// Round 8
+pub const WATER_SHADER: &str = include_str!("water.wgsl");
+pub const CLOUDS_SHADER: &str = include_str!("clouds.wgsl");
+pub const FOLIAGE_SHADER: &str = include_str!("foliage.wgsl");
+pub const TAA_SHADER: &str = include_str!("taa.wgsl");
+pub const GPU_PARTICLE_SHADER: &str = include_str!("gpu_particle.wgsl");

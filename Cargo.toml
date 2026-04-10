@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/forge3d",
+    "crates/thrust",
     "examples/obj_viewer",
     "examples/primitives_demo",
 ]
@@ -15,13 +15,34 @@ rust-version = "1.94.0"
 [workspace.dependencies]
 wgpu = "29"
 winit = "0.30"
-glam = "0.29"
+glam = { version = "0.29", features = ["mint"] }
 bytemuck = { version = "1", features = ["derive"] }
 tobj = { version = "4", features = ["async"] }
 log = "0.4"
 env_logger = "0.11"
 pollster = "0.4"
 anyhow = "1"
-image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp", "tga", "bmp", "gif", "tiff", "ico", "hdr"] }
 hecs = "0.11"
-rodio = "0.20"
+gltf = "1"
+stl_io = "0.8"
+thiserror = "2"
+# 物理エンジン (Round 4)
+rapier3d = { version = "0.22", features = ["simd-stable"] }
+nalgebra = "0.33"
+# タンジェント生成 (Round 4)
+mikktspace = "0.3"
+# 空間音響 (Round 4 後半)
+kira = "0.12"
+mint = "0.5"
+# シリアライゼーション (Round 5)
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# スクリプティング (Round 7)
+rhai = { version = "1", features = ["sync", "no_module"] }
+# ジョブシステム / データ並列 (Round 8)
+rayon = "1"
+# UI / デバッグ HUD (Round 4 後半)
+egui = "0.34"
+egui-wgpu = "0.34"
+egui-winit = "0.34"

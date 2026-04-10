@@ -6,7 +6,7 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-forge3d = { path = "../../crates/forge3d" }
+thrust = { path = "../../crates/thrust" }
 env_logger.workspace = true
 log.workspace = true
 pollster.workspace = true

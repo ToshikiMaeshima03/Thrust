@@ -1,18 +1,23 @@
-use forge3d::{
-    ActiveDirectionalLight, DirectionalLight, Entity, ForgeAppHandler, KeyCode, Material,
-    Resources, Transform, World, despawn, spawn_object, spawn_sphere,
+use thrust::{
+    AgentMover, DirectionalLight, Entity, FogUniform, InstancedMesh, KeyCode, Material, NavMesh,
+    NavMeshBuilder, PointLight, Resources, RigidBody, SpotLight, ThrustAppHandler, Transform,
+    World, despawn, find_path, spawn_object, spawn_sphere,
 };
 
 struct PrimitivesDemo {
     cube_entity: Option<Entity>,
     sphere_entity: Option<Entity>,
     spawned_count: u32,
+    /// Round 5: navmesh + AI agent
+    navmesh: Option<NavMesh>,
+    agent_entity: Option<Entity>,
+    fog_enabled: bool,
 }
 
-impl ForgeAppHandler for PrimitivesDemo {
+impl ThrustAppHandler for PrimitivesDemo {
     fn init(&mut self, world: &mut World, res: &mut Resources) {
-        // 床（灰色の平面）
-        let plane = forge3d::create_plane(&res.gpu.device, 10.0);
+        // 床（灰色の PBR 平面）
+        let plane = thrust::create_plane(&res.gpu.device, 10.0);
         spawn_object(
             world,
             plane,
@@ -20,26 +25,38 @@ impl ForgeAppHandler for PrimitivesDemo {
                 translation: glam::Vec3::new(0.0, -0.5, 0.0),
                 ..Default::default()
             },
-            Material {
-                base_color: glam::Vec4::new(0.4, 0.4, 0.4, 1.0),
-                texture: None,
-            },
+            Material::dielectric(glam::Vec3::splat(0.4), 0.8),
         );
 
-        // 赤いキューブ
-        let cube = forge3d::create_cube(&res.gpu.device, 1.0);
-        self.cube_entity = Some(spawn_object(
+        // 赤いキューブ (Round 4: 動的剛体)
+        let cube = thrust::create_cube(&res.gpu.device, 1.0);
+        let cube_entity = spawn_object(
             world,
             cube,
-            Transform::default(),
-            Material {
-                base_color: glam::Vec4::new(1.0, 0.2, 0.2, 1.0),
-                texture: None,
+            Transform {
+                translation: glam::Vec3::new(0.0, 2.0, 0.0),
+                ..Default::default()
             },
-        ));
+            Material::dielectric(glam::Vec3::new(1.0, 0.2, 0.2), 0.5),
+        );
+        // 物理: 重力で落ちる動的剛体
+        let _ = world.insert(
+            cube_entity,
+            (
+                RigidBody::dynamic(),
+                thrust::Collider {
+                    shape: thrust::ColliderShape::Aabb(thrust::Aabb::new(
+                        glam::Vec3::splat(-0.5),
+                        glam::Vec3::splat(0.5),
+                    )),
+                    is_trigger: false,
+                },
+            ),
+        );
+        self.cube_entity = Some(cube_entity);
 
-        // 青い球体
-        let sphere = forge3d::create_sphere(&res.gpu.device, 0.5, 32, 16);
+        // 金属球 (Round 4: PBR メタリック)
+        let sphere = thrust::create_sphere(&res.gpu.device, 0.5, 32, 16);
         self.sphere_entity = Some(spawn_object(
             world,
             sphere,
@@ -47,31 +64,178 @@ impl ForgeAppHandler for PrimitivesDemo {
                 translation: glam::Vec3::new(2.0, 0.0, 0.0),
                 ..Default::default()
             },
-            Material {
-                base_color: glam::Vec4::new(0.2, 0.4, 1.0, 1.0),
-                texture: None,
+            Material::metallic(glam::Vec3::new(0.95, 0.93, 0.88), 0.2),
+        ));
+
+        // PBR スフィアグリッド (5x5、metallic 0..1 × roughness 0..1)
+        for j in 0..5 {
+            for i in 0..5 {
+                let metallic = i as f32 / 4.0;
+                let roughness = (j as f32 / 4.0).clamp(0.05, 1.0);
+                let mut mat = Material::dielectric(glam::Vec3::new(0.95, 0.65, 0.30), roughness);
+                mat.metallic_factor = metallic;
+                let s = thrust::create_sphere(&res.gpu.device, 0.35, 24, 12);
+                spawn_object(
+                    world,
+                    s,
+                    Transform {
+                        translation: glam::Vec3::new(
+                            -3.0 + i as f32 * 0.9,
+                            1.5 + j as f32 * 0.9,
+                            -3.0,
+                        ),
+                        ..Default::default()
+                    },
+                    mat,
+                );
+            }
+        }
+
+        // Round 4: 複数光源
+        // 追加 directional light (青色、上から)
+        world.spawn((DirectionalLight {
+            direction: glam::Vec3::new(-0.3, -1.0, -0.2).normalize(),
+            color: glam::Vec3::new(0.4, 0.6, 1.0),
+            intensity: 0.5,
+        },));
+
+        // 点光源 3 つ
+        world.spawn((
+            Transform::from_translation(glam::Vec3::new(-2.0, 1.5, 2.0)),
+            PointLight {
+                color: glam::Vec3::new(1.0, 0.3, 0.3),
+                intensity: 5.0,
+                range: 6.0,
+            },
+        ));
+        world.spawn((
+            Transform::from_translation(glam::Vec3::new(2.0, 1.5, 2.0)),
+            PointLight {
+                color: glam::Vec3::new(0.3, 1.0, 0.3),
+                intensity: 5.0,
+                range: 6.0,
+            },
+        ));
+        world.spawn((
+            Transform::from_translation(glam::Vec3::new(0.0, 3.0, -2.0)),
+            PointLight {
+                color: glam::Vec3::new(0.3, 0.3, 1.0),
+                intensity: 5.0,
+                range: 8.0,
             },
         ));
 
-        log::info!("プリミティブデモ初期化完了");
-        log::info!("操作: Space=球追加, Delete=球削除, 矢印キー=ライト方向変更");
+        // スポット光源 1 つ
+        world.spawn((
+            Transform::from_translation(glam::Vec3::new(0.0, 5.0, 0.0)),
+            SpotLight {
+                color: glam::Vec3::ONE,
+                intensity: 8.0,
+                range: 15.0,
+                inner_angle: 0.3,
+                outer_angle: 0.6,
+                direction: glam::Vec3::new(0.0, -1.0, 0.0),
+            },
+        ));
+
+        // Round 5: GPU インスタンシング (foliage 風の小さなキューブを 100 個)
+        let foliage_mesh = thrust::create_cube(&res.gpu.device, 0.2);
+        let mut instances = Vec::with_capacity(100);
+        for i in 0..10 {
+            for j in 0..10 {
+                let x = -4.5 + i as f32;
+                let z = -4.5 + j as f32;
+                instances.push(Transform {
+                    translation: glam::Vec3::new(x, -0.4, z),
+                    rotation: glam::Quat::from_rotation_y((i as f32) * 0.5 + (j as f32) * 0.3),
+                    scale: glam::Vec3::splat(1.0),
+                });
+            }
+        }
+        let foliage = InstancedMesh::new(
+            &res.gpu.device,
+            foliage_mesh,
+            instances,
+            Material::dielectric(glam::Vec3::new(0.3, 0.6, 0.2), 0.7),
+        );
+        world.spawn((foliage,));
+
+        // Round 5: ボリュメトリックフォグ (デフォルト無効、F キーで切替)
+        self.fog_enabled = false;
+
+        // Round 5: navmesh 構築 + AI エージェント
+        let mut nm_builder = NavMeshBuilder::new(glam::Vec3::new(-5.0, 0.0, -5.0), 0.5, 20, 20);
+        // キューブ周辺を障害物としてマーク
+        nm_builder.add_circle_obstacle(glam::Vec3::new(0.0, 0.0, 0.0), 1.0);
+        let navmesh = nm_builder.build();
+        self.navmesh = Some(navmesh);
+
+        // エージェント (オレンジ球が動き回る)
+        let agent_mesh = thrust::create_sphere(&res.gpu.device, 0.2, 16, 8);
+        let agent_entity = spawn_object(
+            world,
+            agent_mesh,
+            Transform::from_translation(glam::Vec3::new(-4.0, 0.0, -4.0)),
+            Material::dielectric(glam::Vec3::new(1.0, 0.5, 0.0), 0.3),
+        );
+        let _ = world.insert_one(agent_entity, AgentMover::new(2.0));
+        self.agent_entity = Some(agent_entity);
+
+        log::info!(
+            "プリミティブデモ初期化完了 (Round 5: CSM + フォグ + インスタンシング + navmesh)"
+        );
+        log::info!(
+            "操作: Space=球追加, Delete=球削除, 矢印キー=ライト方向, F=フォグ, P=エージェント新パス"
+        );
     }
 
     fn update(&mut self, world: &mut World, res: &mut Resources, dt: f32) {
-        // キューブを回転
-        if let Some(entity) = self.cube_entity
-            && let Ok(mut t) = world.get::<&mut Transform>(entity)
-        {
-            t.rotation *= glam::Quat::from_rotation_y(dt);
+        // Round 5: AI エージェント移動
+        thrust::agent_movement_system(world, dt);
+
+        // Round 5: F キーでフォグ切替
+        if res.input.is_key_pressed(KeyCode::KeyF) {
+            self.fog_enabled = !self.fog_enabled;
+            let fog = if self.fog_enabled {
+                FogUniform::outdoor(glam::Vec3::new(0.7, 0.8, 0.9), 0.04)
+            } else {
+                FogUniform::default()
+            };
+            res.fog.update(&res.gpu.queue, fog);
+            log::info!("フォグ: {}", if self.fog_enabled { "ON" } else { "OFF" });
         }
 
-        // Space キーで新しい球体を追加
+        // Round 5: P キーでエージェントに新パス計算
+        if res.input.is_key_pressed(KeyCode::KeyP)
+            && let (Some(navmesh), Some(agent_e)) = (&self.navmesh, self.agent_entity)
+        {
+            let current_pos = world
+                .get::<&Transform>(agent_e)
+                .map(|t| t.translation)
+                .unwrap_or(glam::Vec3::ZERO);
+            // ランダムっぽい目標
+            let target_x = ((self.spawned_count as f32 * 1.7) % 8.0) - 4.0;
+            let target_z = ((self.spawned_count as f32 * 2.3) % 8.0) - 4.0;
+            let target = glam::Vec3::new(target_x, 0.0, target_z);
+            let path = find_path(navmesh, current_pos, target);
+            if let Ok(mut agent) = world.get::<&mut AgentMover>(agent_e) {
+                agent.set_path(path);
+                log::info!(
+                    "エージェント新パス: {} ウェイポイント, target=({:.1}, {:.1})",
+                    agent.path.len(),
+                    target_x,
+                    target_z
+                );
+            }
+        }
+
+        // Space キーで新しい球体を追加 (PBR + 物理)
         if res.input.is_key_pressed(KeyCode::Space) {
             self.spawned_count += 1;
             let t = Transform {
                 translation: glam::Vec3::new(
                     -2.0 + (self.spawned_count % 5) as f32,
-                    0.0,
+                    5.0,
                     -2.0 + (self.spawned_count / 5) as f32,
                 ),
                 ..Default::default()
@@ -82,17 +246,28 @@ impl ForgeAppHandler for PrimitivesDemo {
             let g = ((self.spawned_count * 137) % 256) as f32 / 255.0;
             let b = ((self.spawned_count * 199) % 256) as f32 / 255.0;
 
-            spawn_sphere(
+            let entity = spawn_sphere(
                 world,
                 res,
                 0.3,
                 16,
                 8,
                 t,
-                Material {
-                    base_color: glam::Vec4::new(r, g, b, 1.0),
-                    texture: None,
-                },
+                Material::dielectric(glam::Vec3::new(r, g, b), 0.4),
+            );
+            // 物理: 落下する球
+            let _ = world.insert(
+                entity,
+                (
+                    RigidBody::dynamic(),
+                    thrust::Collider {
+                        shape: thrust::ColliderShape::Sphere {
+                            center: glam::Vec3::ZERO,
+                            radius: 0.3,
+                        },
+                        is_trigger: false,
+                    },
+                ),
             );
             log::info!("球体追加 (合計: {})", self.spawned_count);
         }
@@ -106,9 +281,13 @@ impl ForgeAppHandler for PrimitivesDemo {
             log::info!("球体を削除しました");
         }
 
-        // 矢印キーでライト方向を変更
+        // 矢印キーでライト方向を変更 (1 つ目の DirectionalLight に影響)
         let light_speed = 2.0 * dt;
-        for (light, _) in world.query_mut::<(&mut DirectionalLight, &ActiveDirectionalLight)>() {
+        if let Some(light) = world
+            .query_mut::<&mut DirectionalLight>()
+            .into_iter()
+            .next()
+        {
             if res.input.is_key_held(KeyCode::ArrowLeft) {
                 light.direction = glam::Quat::from_rotation_y(light_speed) * light.direction;
             }
@@ -123,15 +302,51 @@ impl ForgeAppHandler for PrimitivesDemo {
             }
         }
     }
+
+    /// Round 4 後半: egui デバッグ HUD
+    fn ui(&mut self, ctx: &thrust::egui::Context, world: &mut World, res: &mut Resources) {
+        thrust::egui::Window::new("Thrust デバッグ HUD")
+            .default_pos([10.0, 10.0])
+            .default_width(280.0)
+            .show(ctx, |ui| {
+                ui.label(format!("FPS: {:.1}", res.debug_stats.fps));
+                ui.label(format!(
+                    "フレームタイム: {:.2} ms",
+                    res.debug_stats.frame_time_ms
+                ));
+                ui.separator();
+
+                let entity_count = world.iter().count();
+                ui.label(format!("エンティティ数: {entity_count}"));
+                let dir_lights = world.query::<&DirectionalLight>().iter().count();
+                let point_lights = world.query::<&PointLight>().iter().count();
+                let spot_lights = world.query::<&SpotLight>().iter().count();
+                ui.label(format!(
+                    "ライト: dir={dir_lights}, point={point_lights}, spot={spot_lights}"
+                ));
+                ui.label(format!("生成カウント: {}", self.spawned_count));
+                ui.separator();
+
+                ui.label("操作:");
+                ui.label("  Space: 球追加 (PBR + 物理)");
+                ui.label("  Delete: 球削除");
+                ui.label("  矢印: ライト方向");
+                ui.label("  マウスドラッグ: カメラ回転");
+            });
+    }
 }
 
 fn main() {
     env_logger::init();
-    log::info!("forge3d Primitives Demo 起動");
+    log::info!("Thrust Primitives Demo 起動 (Round 4)");
 
-    forge3d::run(PrimitivesDemo {
+    thrust::run(PrimitivesDemo {
         cube_entity: None,
         sphere_entity: None,
         spawned_count: 0,
-    });
+        navmesh: None,
+        agent_entity: None,
+        fog_enabled: false,
+    })
+    .expect("エンジン起動失敗");
 }
