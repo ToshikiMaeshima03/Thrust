@@ -18,6 +18,14 @@ cargo fmt                      # フォーマット
 cargo clippy -- -D warnings    # Lint（警告をエラーとして扱う）
 ```
 
+## コミット運用ルール (重要)
+- **基本作業 (1 つの機能追加 / バグ修正 / リファクタ等) が一区切りついたら必ずコミットする**
+- コミット前に `cargo fmt && cargo clippy --workspace -- -D warnings && cargo test --workspace` が全て green であることを確認する
+- コミットメッセージは日本語、HEREDOC で渡し、bullet 形式で「何を」「なぜ」を記述する
+- セクション区切りで複数の変更がまとまる場合は `## サブタイトル` で構造化する (Round 4 / Round 5 等)
+- ユーザーから「Push して」と言われた時点で `git push origin main` する。明示的に言われない限り push しない
+- 大規模変更でも 1 機能 1 コミットを原則とする (今後)。Round 4-8 のようなまとめコミットは例外的
+
 ## コーディング規約
 - Rust edition 2024, MSRV 1.94.0
 - エラーメッセージ・ログは日本語
