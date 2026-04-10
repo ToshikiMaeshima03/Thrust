@@ -9,6 +9,7 @@ pub mod camera;
 pub mod config;
 pub mod debug;
 pub mod ecs;
+pub mod editor;
 pub mod error;
 pub mod event;
 pub mod input;
@@ -217,6 +218,9 @@ pub use math::{CatmullRomSpline, CubicBezier};
 
 // Round 8: シーンストリーミング
 pub use scene::streaming::{ChunkCoord, StreamingWorld};
+
+// Round 9: ゲーム内エディタ
+pub use editor::{Editor, GizmoMode, TransformGizmo};
 
 // オーディオ (Round 4: kira ベース、空間音響対応)
 pub use audio::{
