@@ -28,3 +28,7 @@ pub const CLOUDS_SHADER: &str = include_str!("clouds.wgsl");
 pub const FOLIAGE_SHADER: &str = include_str!("foliage.wgsl");
 pub const TAA_SHADER: &str = include_str!("taa.wgsl");
 pub const GPU_PARTICLE_SHADER: &str = include_str!("gpu_particle.wgsl");
+// Round 9
+pub const SSGI_SHADER: &str = include_str!("ssgi.wgsl");
+pub const GPU_CULLING_SHADER: &str = include_str!("gpu_culling.wgsl");
+pub const RT_SHADER: &str = include_str!("rt.wgsl");

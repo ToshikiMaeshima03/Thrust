@@ -19,6 +19,7 @@ pub mod light;
 pub mod material;
 pub mod math;
 pub mod mesh;
+pub mod network;
 pub mod particle;
 pub mod physics;
 pub mod renderer;
@@ -219,8 +220,15 @@ pub use math::{CatmullRomSpline, CubicBezier};
 // Round 8: シーンストリーミング
 pub use scene::streaming::{ChunkCoord, StreamingWorld};
 
-// Round 9: ゲーム内エディタ
+// Round 9: ゲーム内エディタ + 高度レンダリング + ネットワーク
 pub use editor::{Editor, GizmoMode, TransformGizmo};
+pub use network::{
+    ClientInput, NetworkClient, NetworkId, NetworkMessage, NetworkServer, ReplicationMode,
+    ServerSnapshot, SnapshotEntity, replicate_transforms,
+};
+pub use renderer::gpu_culling::{CullingParams, DrawIndirectArgs, GpuCulling, InstanceBound};
+pub use renderer::rt::{RtParams, RtSphere, SoftwareRayTracer};
+pub use renderer::ssgi::{Ssgi, SsgiUniform};
 
 // オーディオ (Round 4: kira ベース、空間音響対応)
 pub use audio::{
