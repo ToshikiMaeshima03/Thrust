@@ -1,7 +1,7 @@
 use thrust::{
-    AgentMover, DirectionalLight, Entity, FogUniform, InstancedMesh, KeyCode, Material, NavMesh,
-    NavMeshBuilder, PointLight, Resources, RigidBody, SpotLight, ThrustAppHandler, Transform,
-    World, despawn, find_path, spawn_object, spawn_sphere,
+    AgentMover, DirectionalLight, Editor, Entity, FogUniform, InstancedMesh, KeyCode, Material,
+    NavMesh, NavMeshBuilder, PointLight, Resources, RigidBody, SpotLight, ThrustAppHandler,
+    Transform, World, despawn, find_path, spawn_object, spawn_sphere,
 };
 
 struct PrimitivesDemo {
@@ -12,6 +12,8 @@ struct PrimitivesDemo {
     navmesh: Option<NavMesh>,
     agent_entity: Option<Entity>,
     fog_enabled: bool,
+    /// Round 9: ゲーム内エディタ
+    editor: Editor,
 }
 
 impl ThrustAppHandler for PrimitivesDemo {
@@ -303,50 +305,52 @@ impl ThrustAppHandler for PrimitivesDemo {
         }
     }
 
-    /// Round 4 後半: egui デバッグ HUD
+    /// Round 9: フル機能エディタを表示
     fn ui(&mut self, ctx: &thrust::egui::Context, world: &mut World, res: &mut Resources) {
-        thrust::egui::Window::new("Thrust デバッグ HUD")
-            .default_pos([10.0, 10.0])
-            .default_width(280.0)
+        // メインのエディタ (アウトライナ + インスペクタ + Spawn メニュー + Render 設定 + パフォーマンス)
+        self.editor.show(ctx, world, res);
+
+        // 操作ヒント (右下)
+        thrust::egui::Window::new("操作ヒント")
+            .default_pos([10.0, 600.0])
+            .default_width(220.0)
             .show(ctx, |ui| {
-                ui.label(format!("FPS: {:.1}", res.debug_stats.fps));
-                ui.label(format!(
-                    "フレームタイム: {:.2} ms",
-                    res.debug_stats.frame_time_ms
-                ));
+                ui.label("F: フォグ ON/OFF");
+                ui.label("P: AI エージェント新パス");
+                ui.label("Space: 球追加 (物理付き)");
+                ui.label("Delete: 球削除");
+                ui.label("矢印: ライト方向");
+                ui.label("マウスドラッグ: カメラ回転");
+                ui.label("ホイール: ズーム");
                 ui.separator();
-
-                let entity_count = world.iter().count();
-                ui.label(format!("エンティティ数: {entity_count}"));
-                let dir_lights = world.query::<&DirectionalLight>().iter().count();
-                let point_lights = world.query::<&PointLight>().iter().count();
-                let spot_lights = world.query::<&SpotLight>().iter().count();
-                ui.label(format!(
-                    "ライト: dir={dir_lights}, point={point_lights}, spot={spot_lights}"
-                ));
                 ui.label(format!("生成カウント: {}", self.spawned_count));
-                ui.separator();
-
-                ui.label("操作:");
-                ui.label("  Space: 球追加 (PBR + 物理)");
-                ui.label("  Delete: 球削除");
-                ui.label("  矢印: ライト方向");
-                ui.label("  マウスドラッグ: カメラ回転");
             });
     }
 }
 
 fn main() {
     env_logger::init();
-    log::info!("Thrust Primitives Demo 起動 (Round 4)");
+    log::info!("Thrust Primitives Demo 起動 (Round 9 - エディタ統合)");
+    log::info!("==================================================");
+    log::info!("ゲーム内エディタ機能:");
+    log::info!("  - 左パネル: アウトライナ (エンティティ一覧/検索/削除/複製)");
+    log::info!("  - 右パネル: インスペクタ (Transform/Material/Light 編集)");
+    log::info!("  - 左中央: Spawn メニュー (Cube/Sphere/Plane/各種ライト)");
+    log::info!("  - 左下: レンダリング設定 (Fog/SSAO/SSR/DOF/Color Grading)");
+    log::info!("  - 右上: パフォーマンス HUD (FPS/Entities/Lights)");
+    log::info!("  - メニュー: シーン Save/Load + ツール切替");
+    log::info!("==================================================");
 
-    thrust::run(PrimitivesDemo {
+    if let Err(e) = thrust::run(PrimitivesDemo {
         cube_entity: None,
         sphere_entity: None,
         spawned_count: 0,
         navmesh: None,
         agent_entity: None,
         fog_enabled: false,
-    })
-    .expect("エンジン起動失敗");
+        editor: Editor::new(),
+    }) {
+        log::error!("エンジン起動失敗: {e}");
+        std::process::exit(1);
+    }
 }
