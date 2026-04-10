@@ -390,6 +390,9 @@ impl ApplicationHandler for ThrustAppInner {
             resources.gpu.config.format,
             egui_wgpu::RendererOptions::default(),
         );
+        // Round 9: 日本語フォント自動ロード
+        crate::fonts::install_japanese_fonts(&self.egui_ctx);
+
         let viewport_id = self.egui_ctx.viewport_id();
         let egui_winit = egui_winit::State::new(
             self.egui_ctx.clone(),

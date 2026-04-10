@@ -12,6 +12,7 @@ pub mod ecs;
 pub mod editor;
 pub mod error;
 pub mod event;
+pub mod fonts;
 pub mod input;
 pub mod input_action;
 pub mod jobs;
@@ -220,8 +221,9 @@ pub use math::{CatmullRomSpline, CubicBezier};
 // Round 8: シーンストリーミング
 pub use scene::streaming::{ChunkCoord, StreamingWorld};
 
-// Round 9: ゲーム内エディタ + 高度レンダリング + ネットワーク
+// Round 9: ゲーム内エディタ + 高度レンダリング + ネットワーク + 日本語フォント
 pub use editor::{Editor, GizmoMode, TransformGizmo};
+pub use fonts::{install_font_from_path, install_japanese_fonts};
 pub use network::{
     ClientInput, NetworkClient, NetworkId, NetworkMessage, NetworkServer, ReplicationMode,
     ServerSnapshot, SnapshotEntity, replicate_transforms,
